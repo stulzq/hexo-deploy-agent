@@ -1,0 +1,12 @@
+log:
+  level: Debug
+
+deploy:
+  blog_dir: /wwwroot/blog
+  cdn:
+    enable: false
+    accessKey:
+    secretKey:
+    flushType: flush
+    refreshPaths:
+      - https://xcmaster.com
