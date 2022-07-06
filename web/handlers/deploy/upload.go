@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,6 +38,7 @@ func init() {
 	if util.IsDebug() {
 		deployConf.CDN.AccessKey = os.Getenv("AK")
 		deployConf.CDN.SecretKey = os.Getenv("SK")
+		deployConf.Dingtalk.Url = os.Getenv("DINGTALK_URL")
 	}
 
 	// create dir
@@ -124,6 +126,13 @@ func processDeploy(fileSavePath string) {
 	}
 
 	logger.Info("[Deploy][Job] successfully")
+
+	const msg = `{"msgtype": "text","text": {"content":"Deploy successfully!"}}`
+
+	// send msg https://open.dingtalk.com/document/group/custom-robot-access
+	if _, err := http.Post(deployConf.Dingtalk.Url, "application/json", strings.NewReader(msg)); err != nil {
+		logger.Error("[Deploy][Job] send msg failed, ", err)
+	}
 
 	os.Remove(fileSavePath)
 	os.RemoveAll(unzipTmp)

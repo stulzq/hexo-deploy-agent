@@ -9,4 +9,7 @@ deploy:
     secretKey:
     flushType: flush
     refreshPaths:
-      - https://xcmaster.com
+      - https://xcmaster.com/
+  dingtalk:
+    enable: false
+    url:
