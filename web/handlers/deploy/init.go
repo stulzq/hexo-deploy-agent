@@ -26,7 +26,7 @@ const (
 func init() {
 	// load deploy config
 	deployConf = &model.DeployConfig{}
-	config.GetStruct("deploy", deployConf)
+	_ = config.GetStruct("deploy", deployConf)
 
 	if util.IsDebug() {
 		deployConf.CDN.AccessKey = os.Getenv("AK")

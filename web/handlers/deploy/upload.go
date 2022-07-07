@@ -113,6 +113,6 @@ func stepPushMsg() {
 }
 
 func stepClean(fileSavePath string) {
-	os.Remove(fileSavePath)
-	os.RemoveAll(unzipTmp)
+	_ = os.Remove(fileSavePath)
+	_ = os.RemoveAll(unzipTmp)
 }
