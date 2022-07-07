@@ -97,7 +97,7 @@ touch deploy.yml
 ````yaml
 name: Deploy
 
-on: 
+on:
   push:
     branches:
       - master
@@ -107,29 +107,29 @@ jobs:
     name: build and package
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        registry-url: https://registry.npmjs.org/
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Deploy
-      run: npm run deploy
-    - name: Package
-      run: |
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://registry.npmjs.org/
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Deploy
+        run: npm run deploy
+      - name: Package
+        run: |
           mkdir /home/runner/work/release
           cd public
           zip -r /home/runner/work/release/site.zip ./*
           cd ../
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: site
-        path: /home/runner/work/release
-    - name: Clean
-      run: |
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: site
+          path: /home/runner/work/release
+      - name: Clean
+        run: |
           rm -rf public
           rm -rf /home/runner/work/release
 
@@ -143,7 +143,7 @@ jobs:
         with:
           name: site
       - name: upload
-        env: 
+        env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
         run: curl -X POST -F "f=@site/site.zip" $UPLOAD_URL
 
@@ -161,6 +161,10 @@ jobs:
 > 可以直接使用国内云服务器，POST 部署包速度也是很快的
 
 配置完成！
+
+## 其他项目
+
+- [hexo-statistics](https://github.com/stulzq/hexo-statistics) Hexo 博客统计
 
 
 

@@ -162,5 +162,9 @@ jobs:
 
 配置完成！
 
+## 其他项目
+
+- [hexo-statistics](https://github.com/stulzq/hexo-statistics) Hexo 博客统计
+
 
 
