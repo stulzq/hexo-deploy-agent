@@ -8,53 +8,12 @@ import (
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/pkg/errors"
 	cdn "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cdn/v20180606"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	terrors "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 
-	"github.com/stulzq/hexo-deploy-agent/config"
 	"github.com/stulzq/hexo-deploy-agent/logger"
 	"github.com/stulzq/hexo-deploy-agent/util"
-	"github.com/stulzq/hexo-deploy-agent/web/handlers/deploy/model"
 )
-
-var (
-	deployConf *model.DeployConfig
-	cdnClient  *cdn.Client
-)
-
-const (
-	uploadPath = "deploy/upload/"
-	unzipTmp   = "deploy/tmp/"
-)
-
-func init() {
-	// load config
-	var conf model.DeployConfig
-	config.GetStruct("deploy", &conf)
-	deployConf = &conf
-	if util.IsDebug() {
-		deployConf.CDN.AccessKey = os.Getenv("AK")
-		deployConf.CDN.SecretKey = os.Getenv("SK")
-		deployConf.Dingtalk.Url = os.Getenv("DINGTALK_URL")
-	}
-
-	// create dir
-	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
-		panic(errors.Wrap(err, "mkdir err"))
-	}
-
-	// tencentyun cdn client
-	credential := common.NewCredential(
-		deployConf.CDN.AccessKey,
-		deployConf.CDN.SecretKey,
-	)
-	cpf := profile.NewClientProfile()
-	cpf.HttpProfile.Endpoint = "cdn.tencentcloudapi.com"
-	cdnClient, _ = cdn.NewClient(credential, "", cpf)
-}
 
 // Upload upload deploy file(zip)
 func Upload(_ context.Context, c *app.RequestContext) {
@@ -75,7 +34,6 @@ func Upload(_ context.Context, c *app.RequestContext) {
 
 	// save file
 	fileSavePath := filepath.Join(uploadPath, file.Filename)
-
 	logger.Info("[Web][Deploy][Upload] receive file: ", file.Filename)
 	err = c.SaveUploadedFile(file, fileSavePath)
 
@@ -94,48 +52,67 @@ func Upload(_ context.Context, c *app.RequestContext) {
 func processDeploy(fileSavePath string) {
 	logger.Info("[Deploy][Job] start deploy ", fileSavePath)
 
-	// unzip
+	stepUnzip(fileSavePath)
+
+	stepRefreshCDN()
+
+	stepPushMsg()
+
+	stepClean(fileSavePath)
+
+	logger.Info("[Deploy][Job] successfully")
+}
+
+func stepUnzip(fileSavePath string) {
 	unzipTargetDir := deployConf.BlogDir
 	if util.IsDebug() {
 		unzipTargetDir = unzipTmp
 	}
+
 	if err := util.UnZip(fileSavePath, unzipTargetDir); err != nil {
 		logger.Error("[Deploy][Job] unzip err,", err)
 		return
 	}
 
 	logger.Info("[Deploy][Job] unzip success to path: ", unzipTargetDir)
+}
 
-	// cdn
-	if deployConf.CDN.Enable {
-		request := cdn.NewPurgePathCacheRequest()
-		request.Paths = deployConf.CDN.RefreshPaths
-		request.FlushType = deployConf.CDN.FlushType
-
-		response, err := cdnClient.PurgePathCache(request)
-		if _, ok := err.(*terrors.TencentCloudSDKError); ok {
-			logger.Error("[Deploy][Job] an API error has returned: ", err)
-			return
-		}
-		if err != nil {
-			logger.Error("[Deploy][Job] cdn request err: ", err)
-			return
-		}
-
-		logger.Info("[Deploy][Job] cdn response: ", response.ToJsonString())
+func stepRefreshCDN() {
+	if !deployConf.CDN.Enable {
+		return
 	}
 
-	logger.Info("[Deploy][Job] successfully")
+	request := cdn.NewPurgePathCacheRequest()
+	request.Paths = deployConf.CDN.RefreshPaths
+	request.FlushType = deployConf.CDN.FlushType
 
-	if deployConf.Dingtalk.Enable {
-		const msg = `{"msgtype": "text","text": {"content":"Deploy successfully!"}}`
-
-		// send msg https://open.dingtalk.com/document/group/custom-robot-access
-		if _, err := http.Post(deployConf.Dingtalk.Url, "application/json", strings.NewReader(msg)); err != nil {
-			logger.Error("[Deploy][Job] send msg failed, ", err)
-		}
+	response, err := cdnClient.PurgePathCache(request)
+	if _, ok := err.(*terrors.TencentCloudSDKError); ok {
+		logger.Error("[Deploy][Job] an API error has returned: ", err)
+		return
+	}
+	if err != nil {
+		logger.Error("[Deploy][Job] cdn request err: ", err)
+		return
 	}
 
+	logger.Info("[Deploy][Job] cdn response: ", response.ToJsonString())
+}
+
+func stepPushMsg() {
+	if !deployConf.Dingtalk.Enable {
+		return
+	}
+
+	const msg = `{"msgtype": "text","text": {"content":"Deploy successfully!"}}`
+
+	// send msg https://open.dingtalk.com/document/group/custom-robot-access
+	if _, err := http.Post(deployConf.Dingtalk.Url, "application/json", strings.NewReader(msg)); err != nil {
+		logger.Error("[Deploy][Job] send msg failed, ", err)
+	}
+}
+
+func stepClean(fileSavePath string) {
 	os.Remove(fileSavePath)
 	os.RemoveAll(unzipTmp)
 }
