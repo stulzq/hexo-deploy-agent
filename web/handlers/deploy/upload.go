@@ -127,11 +127,13 @@ func processDeploy(fileSavePath string) {
 
 	logger.Info("[Deploy][Job] successfully")
 
-	const msg = `{"msgtype": "text","text": {"content":"Deploy successfully!"}}`
+	if deployConf.Dingtalk.Enable {
+		const msg = `{"msgtype": "text","text": {"content":"Deploy successfully!"}}`
 
-	// send msg https://open.dingtalk.com/document/group/custom-robot-access
-	if _, err := http.Post(deployConf.Dingtalk.Url, "application/json", strings.NewReader(msg)); err != nil {
-		logger.Error("[Deploy][Job] send msg failed, ", err)
+		// send msg https://open.dingtalk.com/document/group/custom-robot-access
+		if _, err := http.Post(deployConf.Dingtalk.Url, "application/json", strings.NewReader(msg)); err != nil {
+			logger.Error("[Deploy][Job] send msg failed, ", err)
+		}
 	}
 
 	os.Remove(fileSavePath)
