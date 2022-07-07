@@ -2,7 +2,7 @@
 
 [English](README.md)|中文
 
-Hexo 部署 Agent，基于 Github Actions。
+Hexo 部署 Agent，基于 Github Actions 可实现完全自动化部署 Hexo 博客，每次提交都会自动打包、部署、更新和刷新 CDN 缓存。
 
 特性：
 
@@ -79,7 +79,7 @@ deploy:
 
 ## Github Actions 配置
 
-在你的博客根目录下新建文件夹 
+在你的博客根目录下新建文件夹
 
 ````shell
 mkdir -p .github/workflows
@@ -97,7 +97,7 @@ touch deploy.yml
 ````yaml
 name: Deploy
 
-on: 
+on:
   push:
     branches:
       - master
@@ -107,29 +107,29 @@ jobs:
     name: build and package
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        registry-url: https://registry.npmjs.org/
-        cache: 'npm'
-    - name: Install dependencies
-      run: npm ci
-    - name: Deploy
-      run: npm run deploy
-    - name: Package
-      run: |
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: https://registry.npmjs.org/
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Deploy
+        run: npm run deploy
+      - name: Package
+        run: |
           mkdir /home/runner/work/release
           cd public
           zip -r /home/runner/work/release/site.zip ./*
           cd ../
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: site
-        path: /home/runner/work/release
-    - name: Clean
-      run: |
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: site
+          path: /home/runner/work/release
+      - name: Clean
+        run: |
           rm -rf public
           rm -rf /home/runner/work/release
 
@@ -143,7 +143,7 @@ jobs:
         with:
           name: site
       - name: upload
-        env: 
+        env:
           UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
         run: curl -X POST -F "f=@site/site.zip" $UPLOAD_URL
 

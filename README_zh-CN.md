@@ -2,7 +2,7 @@
 
 [English](README.md)|中文
 
-Hexo 部署 Agent，基于 Github Actions。
+Hexo 部署 Agent，基于 Github Actions 可实现完全自动化部署 Hexo 博客，每次提交都会自动打包、部署、更新和刷新 CDN 缓存。
 
 特性：
 
